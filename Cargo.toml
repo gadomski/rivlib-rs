@@ -2,3 +2,9 @@
 name = "rivlib"
 version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+docopt = "0.6"
+libc = "0.2"
+log = "0.3"
+rustc-serialize = "0.3"
