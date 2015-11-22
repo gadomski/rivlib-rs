@@ -8,14 +8,15 @@ use std::ptr;
 
 use libc::{c_char, c_int, c_float, int32_t, uint16_t, uint32_t, uint64_t};
 
-use super::{Result, RivlibError};
+use Result;
+use error::Error;
 
 macro_rules! scanifc_try {
     ($x:expr) => {
         unsafe {
             match $x {
                 0 => {},
-                n @ _ => return Err(RivlibError::Scanifc(n, last_error())),
+                n @ _ => return Err(Error::Scanifc(n, last_error())),
             }
         }
     };
@@ -80,7 +81,7 @@ impl Stream {
             let retval = scanifc_point3dstream_open(uri, sync_to_pps as i32, &mut h3ds);
             let _ = CString::from_raw(uri);
             if retval != 0 {
-                return Err(RivlibError::Scanifc(retval, last_error()));
+                return Err(Error::Scanifc(retval, last_error()));
             }
         }
 
@@ -115,7 +116,7 @@ impl Stream {
             let _ = CString::from_raw(selections);
             let _ = CString::from_raw(classes);
             if retval != 0 {
-                return Err(RivlibError::Scanifc(retval, last_error()));
+                return Err(Error::Scanifc(retval, last_error()));
             }
         }
         Ok(())
