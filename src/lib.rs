@@ -17,8 +17,65 @@ extern crate log;
 
 use std::result;
 
+macro_rules! scanifc_try {
+    ($x:expr) => {
+        unsafe {
+            match $x {
+                0 => {},
+                n @ _ => return Err(Error::Scanifc(n, last_error())),
+            }
+        }
+    };
+}
+
 pub mod error;
-pub mod scanifc;
+mod scanifc;
+pub mod stream;
+
+pub use stream::Stream;
+
+use std::ffi::CStr;
+use std::ptr;
+
+use libc::c_char;
+
+use error::Error;
+use scanifc::last_error;
+
+/// Returns the scanifc library version as a three-tuple.
+///
+/// # Examples
+///
+/// ```
+/// use rivlib;
+/// let (major, minor, build) = rivlib::library_version().unwrap();
+/// ```
+pub fn library_version() -> Result<(u16, u16, u16)> {
+    let mut major = 0u16;
+    let mut minor = 0u16;
+    let mut build = 0u16;
+    scanifc_try!(scanifc::scanifc_get_library_version(&mut major, &mut minor, &mut build));
+    Ok((major, minor, build))
+}
+
+/// Returns information about the library's build version and tag.
+///
+/// # Examples
+///
+/// ```
+/// use rivlib;
+/// let (build_version, build_tag) = rivlib::library_info().unwrap();
+/// ```
+pub fn library_info<'a>() -> Result<(&'a str, &'a str)> {
+    let mut build_version: *const c_char = ptr::null();
+    let mut build_tag: *const c_char = ptr::null();
+    scanifc_try!(scanifc::scanifc_get_library_info(&mut build_version, &mut build_tag));
+    unsafe {
+        Ok((try!(CStr::from_ptr(build_version).to_str()),
+        try!(CStr::from_ptr(build_tag).to_str())))
+    }
+}
+
 
 /// Crate-specific results.
-pub type Result<T> = result::Result<T, error::Error>;
+pub type Result<T> = result::Result<T, Error>;

@@ -6,8 +6,6 @@ use std::process::exit;
 
 use docopt::Docopt;
 
-use rivlib::scanifc;
-
 const USAGE: &'static str = "
 Get information about a data stream.
 
@@ -43,16 +41,16 @@ fn main() {
 
     if args.flag_version {
         println!("rivlib-rs version: {}", env!("CARGO_PKG_VERSION"));
-        let (major, minor, build) = scanifc::library_version().unwrap();
+        let (major, minor, build) = rivlib::library_version().unwrap();
         println!("scanifc library version: {}.{}.{}", major, minor, build);
-        let (build_version, build_tag) = scanifc::library_info().unwrap();
+        let (build_version, build_tag) = rivlib::library_info().unwrap();
         println!("scanifc build version: {}", build_version);
         println!("scanifc build tag: {}", build_tag);
         exit(0);
     }
 
     if args.cmd_info {
-        let stream = scanifc::Stream::open(args.arg_stream, args.flag_sync_to_pps).unwrap();
+        let stream = rivlib::Stream::open(args.arg_stream, args.flag_sync_to_pps).unwrap();
         let points: Vec<_> = stream.into_iter().collect();
         println!("number of points: {}", points.len());
     }
