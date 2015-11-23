@@ -19,6 +19,7 @@ const DEFAULT_POINT_ITERATOR_WANT: u32 = 1000;
 pub struct Stream {
     handle: point3dstream_handle,
     eof: bool,
+    sync_to_pps: bool,
 }
 
 impl Stream {
@@ -41,7 +42,7 @@ impl Stream {
             }
         }
 
-        Ok(Stream { handle: h3ds, eof: false, })
+        Ok(Stream { handle: h3ds, eof: false, sync_to_pps: sync_to_pps })
     }
 
     /// Adds a demultiplexer to the data stream.
@@ -155,6 +156,18 @@ impl Stream {
                                    })
                                    .collect();
         Ok(Some(points))
+    }
+
+    /// Returns true if this stream is synced to pps.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rivlib::stream::Stream;
+    /// let stream = Stream::open("data/130501_232206_cut.rxp", false).unwrap();
+    /// assert!(!stream.sync_to_pps());
+    pub fn sync_to_pps(&self) -> bool {
+        self.sync_to_pps
     }
 }
 
