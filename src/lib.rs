@@ -32,7 +32,7 @@ pub mod error;
 mod scanifc;
 pub mod stream;
 
-pub use stream::Stream;
+pub use stream::{Stream, Point};
 
 use std::ffi::CStr;
 use std::ptr;
