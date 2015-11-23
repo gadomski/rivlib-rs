@@ -18,6 +18,7 @@ const DEFAULT_POINT_ITERATOR_WANT: u32 = 1000;
 #[allow(missing_copy_implementations)]
 pub struct Stream {
     handle: point3dstream_handle,
+    eof: bool,
 }
 
 impl Stream {
@@ -40,7 +41,7 @@ impl Stream {
             }
         }
 
-        Ok(Stream { handle: h3ds })
+        Ok(Stream { handle: h3ds, eof: false, })
     }
 
     /// Adds a demultiplexer to the data stream.
@@ -93,17 +94,19 @@ impl Stream {
 
     /// Reads some points from this stream.
     ///
-    /// Returns a two-tuple. The first element is a vector of `Point`s, the second is a boolean
-    /// indicating if the end of the stream has been reached.
+    /// Returns an optional vector of points, or `None` if the end of the stream has been reached.
     ///
     /// # Examples
     ///
     /// ```
     /// use rivlib::stream::Stream;
     /// let mut stream = Stream::open("data/130501_232206_cut.rxp", true).unwrap();
-    /// let (points, end_of_frame) = stream.read(10).unwrap();
+    /// let points = stream.read(10).unwrap();
     /// ```
-    pub fn read(&mut self, want: u32) -> Result<(Vec<Point>, bool)> {
+    pub fn read(&mut self, want: u32) -> Result<Option<Vec<Point>>> {
+        if self.eof {
+            return Ok(None);
+        }
         let mut pxyz32: Vec<xyz32> = Vec::with_capacity(want as usize);
         let mut pattributes: Vec<attributes> = Vec::with_capacity(want as usize);
         let mut ptime: Vec<uint64_t> = Vec::with_capacity(want as usize);
@@ -116,6 +119,10 @@ impl Stream {
                                                 ptime.as_mut_ptr(),
                                                 &mut got,
                                                 &mut end_of_frame));
+        if got == 0 && end_of_frame == 0 {
+            self.eof = true;
+            return Ok(None);
+        }
 
         unsafe {
             pxyz32.set_len(got as usize);
@@ -147,7 +154,7 @@ impl Stream {
                                        }
                                    })
                                    .collect();
-        Ok((points, end_of_frame != 0))
+        Ok(Some(points))
     }
 }
 
@@ -175,11 +182,10 @@ impl Iterator for PointIterator {
     type Item = Point;
     fn next(&mut self) -> Option<Self::Item> {
         if self.points.is_empty() {
-            let (points, eof) = self.stream.read(self.want).unwrap();
-            if eof {
-                return None;
+            match self.stream.read(self.want).unwrap() {
+                Some(points) => self.points = points,
+                None => return None,
             }
-            self.points = points;
         }
         self.points.pop()
     }
@@ -258,3 +264,17 @@ impl EchoType {
 /// The facet of this point
 #[derive(Clone, Copy, Debug)]
 pub struct Facet(u8);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn read_to_eof() {
+        let mut stream = Stream::open("data/130501_232206_cut.rxp", true).unwrap();
+        let points = stream.read(177208).unwrap().unwrap();
+        assert_eq!(177208, points.len());
+        let points = stream.read(1).unwrap();
+        assert!(points.is_none());
+    }
+}
