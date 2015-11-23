@@ -32,6 +32,7 @@ pub mod error;
 mod scanifc;
 pub mod stream;
 
+pub use error::Error;
 pub use stream::{Stream, Point};
 
 use std::ffi::CStr;
@@ -39,7 +40,6 @@ use std::ptr;
 
 use libc::c_char;
 
-use error::Error;
 use scanifc::last_error;
 
 /// Returns the scanifc library version as a three-tuple.
