@@ -2,6 +2,13 @@
 name = "rivlib"
 version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+description = "FFI wrappers around Riegl's RiVLib"
+documentation = "http://gadomski.github.io/rivlib-rs"
+homepage = "https://github.com/gadomski/rivlib-rs"
+repository = "https://github.com/gadomski/rivlib-rs.git"
+readme = "README.md"
+keywords = ["pointcloud", "LiDAR", "rxp"]
+license = "MIT"
 
 [dependencies]
 docopt = "0.6"
