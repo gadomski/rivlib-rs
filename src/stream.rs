@@ -42,7 +42,11 @@ impl Stream {
             }
         }
 
-        Ok(Stream { handle: h3ds, eof: false, sync_to_pps: sync_to_pps })
+        Ok(Stream {
+            handle: h3ds,
+            eof: false,
+            sync_to_pps: sync_to_pps,
+        })
     }
 
     /// Adds a demultiplexer to the data stream.

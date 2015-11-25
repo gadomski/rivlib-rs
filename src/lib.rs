@@ -72,7 +72,7 @@ pub fn library_info<'a>() -> Result<(&'a str, &'a str)> {
     scanifc_try!(scanifc::scanifc_get_library_info(&mut build_version, &mut build_tag));
     unsafe {
         Ok((try!(CStr::from_ptr(build_version).to_str()),
-        try!(CStr::from_ptr(build_tag).to_str())))
+            try!(CStr::from_ptr(build_tag).to_str())))
     }
 }
 
