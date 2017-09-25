@@ -1,0 +1,7 @@
+[package]
+name = "scanifc-sys"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[build-dependencies]
+bindgen = "0.30"
