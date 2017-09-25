@@ -4,6 +4,9 @@ extern crate scanifc_sys;
 #[macro_use]
 mod macros;
 pub mod point3d;
+mod point;
+
+pub use point::Point;
 
 use std::ffi::{IntoStringError, NulError};
 
