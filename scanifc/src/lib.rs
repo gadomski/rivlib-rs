@@ -66,6 +66,28 @@ pub fn library_version() -> Result<Version> {
     Ok(version)
 }
 
+/// Returns extended version information that allows traceability of the SCM system.
+///
+/// # Examples
+///
+/// ```
+/// let version = scanifc::library_build_version();
+/// ```
+pub fn library_build_version() -> Result<String> {
+    library_info().map(|(version, _)| version)
+}
+
+/// Returns additional information about the build.
+///
+/// # Examples
+///
+/// ```
+/// let tag = scanifc::library_build_tag();
+/// ```
+pub fn library_build_tag() -> Result<String> {
+    library_info().map(|(_, tag)| tag)
+}
+
 /// Returns the last error message recorded by the scanifc library.
 ///
 /// # Examples
@@ -112,6 +134,24 @@ impl From<NulError> for Error {
     }
 }
 
+fn library_info() -> Result<(String, String)> {
+    use std::ptr;
+    use std::ffi::CStr;
+
+    let mut version: *const libc::c_char = ptr::null();
+    let mut tag: *const libc::c_char = ptr::null();
+    scanifc_try!(scanifc_sys::scanifc_get_library_info(
+        &mut version,
+        &mut tag,
+    ));
+    let version = unsafe { CStr::from_ptr(version) };
+    let tag = unsafe { CStr::from_ptr(tag) };
+    Ok((
+        version.to_string_lossy().into_owned(),
+        tag.to_string_lossy().into_owned(),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,5 +159,15 @@ mod tests {
     #[test]
     fn library_version_is_ok() {
         assert!(library_version().is_ok());
+    }
+
+    #[test]
+    fn library_build_version_is_ok() {
+        assert!(library_build_version().is_ok());
+    }
+
+    #[test]
+    fn library_build_tag_is_ok() {
+        assert!(library_build_tag().is_ok());
     }
 }
