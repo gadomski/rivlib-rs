@@ -1,19 +1,14 @@
 extern crate libc;
 extern crate scanifc_sys;
 
+#[macro_use]
+mod macros;
+pub mod point3d;
+
 use std::ffi::{IntoStringError, NulError};
 
-const LAST_ERROR_BUFFER_SIZE: usize = 256;
-
-macro_rules! scanifc_try {
-    ($expr:expr) => ({
-        let result = unsafe { $expr };
-        if result != 0 {
-            let msg = last_error()?;
-            return Err(Error::Scanifc(result, msg));
-        }
-    })
-}
+// This number was cribbed from the rivlib example.
+const LAST_ERROR_BUFFER_SIZE: usize = 512;
 
 /// Our custom error enum.
 #[derive(Debug)]
