@@ -7,19 +7,19 @@ use std::path::Path;
 const DEFAULT_WANT: u32 = 1024;
 const DEFAULT_SYNC_TO_PPS: bool = true;
 
-/// A builder for streams.
+/// A stream of 3D points.
 ///
-/// Allows configuration of the stream behavior.
+/// Follows the builder pattern to set the options for the stream.
 #[derive(Debug)]
-pub struct Builder {
+pub struct Stream {
     sync_to_pps: bool,
     uri: Uri,
     want: u32,
 }
 
-/// A stream of points, from an rxp file.
+/// An open stream of points, used for reading.
 #[derive(Debug)]
-pub struct Stream {
+pub struct OpenStream {
     buffer: VecDeque<Point>,
     handle: scanifc_sys::point3dstream_handle,
     want: u32,
@@ -31,17 +31,17 @@ enum Uri {
     Rdtp(String),
 }
 
-impl Builder {
+impl Stream {
     /// Creates a new builder for the provided file path.
     ///
     /// # Examples
     ///
     /// ```
-    /// use scanifc::point3d::Builder;
-    /// let builder = Builder::from_path("data/scan.rxp");
+    /// use scanifc::point3d::Stream;
+    /// let builder = Stream::from_path("data/scan.rxp");
     /// ```
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Builder {
-        Builder {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Stream {
+        Stream {
             sync_to_pps: DEFAULT_SYNC_TO_PPS,
             uri: Uri::from_path(path),
             want: DEFAULT_WANT,
@@ -53,11 +53,11 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// use scanifc::point3d::Builder;
-    /// let builder = Builder::from_rdtp("192.168.0.33/current?type=mon");
+    /// use scanifc::point3d::Stream;
+    /// let builder = Stream::from_rdtp("192.168.0.33/current?type=mon");
     /// ```
-    pub fn from_rdtp(rdtp: &str) -> Builder {
-        Builder {
+    pub fn from_rdtp(rdtp: &str) -> Stream {
+        Stream {
             sync_to_pps: DEFAULT_SYNC_TO_PPS,
             uri: Uri::from_rdtp(rdtp),
             want: DEFAULT_WANT,
@@ -69,10 +69,10 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// use scanifc::point3d::Builder;
-    /// let builder = Builder::from_path("data/scan.rxp").sync_to_pps(false);
+    /// use scanifc::point3d::Stream;
+    /// let builder = Stream::from_path("data/scan.rxp").sync_to_pps(false);
     /// ```
-    pub fn sync_to_pps(mut self, sync_to_pps: bool) -> Builder {
+    pub fn sync_to_pps(mut self, sync_to_pps: bool) -> Stream {
         self.sync_to_pps = sync_to_pps;
         self
     }
@@ -82,10 +82,10 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// use scanifc::point3d::Builder;
-    /// let builder = Builder::from_path("data/scan.rxp").want(1);
+    /// use scanifc::point3d::Stream;
+    /// let builder = Stream::from_path("data/scan.rxp").want(1);
     /// ```
-    pub fn want(mut self, want: u32) -> Builder {
+    pub fn want(mut self, want: u32) -> Stream {
         self.want = want;
         self
     }
@@ -95,10 +95,10 @@ impl Builder {
     /// # Examples
     ///
     /// ```
-    /// use scanifc::point3d::Builder;
-    /// let stream = Builder::from_path("data/scan.rxp").to_stream().unwrap();
+    /// use scanifc::point3d::Stream;
+    /// let stream = Stream::from_path("data/scan.rxp").open().unwrap();
     /// ```
-    pub fn to_stream(&self) -> Result<Stream> {
+    pub fn open(&self) -> Result<OpenStream> {
         use std::ffi::CString;
         use std::ptr;
 
@@ -109,7 +109,7 @@ impl Builder {
             if self.sync_to_pps { 1 } else { 0 },
             &mut handle,
         ));
-        Ok(Stream {
+        Ok(OpenStream {
             buffer: VecDeque::new(),
             handle: handle,
             want: self.want,
@@ -117,7 +117,7 @@ impl Builder {
     }
 }
 
-impl Stream {
+impl OpenStream {
     /// Consumes this stream and returns a vector of points.
     ///
     /// If this stream is mid-read, the returned points will be only the remaining points in the
@@ -126,8 +126,8 @@ impl Stream {
     /// # Examples
     ///
     /// ```
-    /// use scanifc::point3d::Builder;
-    /// let stream = Builder::from_path("data/scan.rxp").to_stream().unwrap();
+    /// use scanifc::point3d::Stream;
+    /// let stream = Stream::from_path("data/scan.rxp").open().unwrap();
     /// let points = stream.into_points().unwrap();
     /// ```
     pub fn into_points(self) -> Result<Vec<Point>> {
@@ -177,7 +177,7 @@ impl Stream {
     }
 }
 
-impl Iterator for Stream {
+impl Iterator for OpenStream {
     type Item = Result<Point>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -193,7 +193,7 @@ impl Iterator for Stream {
     }
 }
 
-impl Drop for Stream {
+impl Drop for OpenStream {
     fn drop(&mut self) {
         unsafe { scanifc_sys::scanifc_point3dstream_close(self.handle) };
     }
@@ -236,25 +236,22 @@ mod tests {
 
     #[test]
     fn builder() {
-        let stream = Builder::from_path("data/scan.rxp").to_stream().unwrap();
+        let stream = Stream::from_path("data/scan.rxp").open().unwrap();
         assert_eq!(24390, stream.into_points().unwrap().len());
     }
 
     #[test]
     fn builder_sync_to_pps() {
-        let stream = Builder::from_path("data/scan.rxp")
+        let stream = Stream::from_path("data/scan.rxp")
             .sync_to_pps(false)
-            .to_stream()
+            .open()
             .unwrap();
         assert_eq!(24390, stream.into_points().unwrap().len());
     }
 
     #[test]
     fn builder_want() {
-        let mut stream = Builder::from_path("data/scan.rxp")
-            .want(1)
-            .to_stream()
-            .unwrap();
+        let mut stream = Stream::from_path("data/scan.rxp").want(1).open().unwrap();
         assert_eq!(1, stream.read().unwrap().unwrap().len());
     }
 }
