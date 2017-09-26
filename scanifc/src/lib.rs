@@ -1,5 +1,7 @@
 extern crate libc;
 extern crate scanifc_sys;
+#[cfg(test)]
+extern crate tempfile;
 
 #[macro_use]
 mod macros;

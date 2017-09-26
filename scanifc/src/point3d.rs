@@ -1,7 +1,7 @@
 use {Point, Result};
 use scanifc_sys;
 use std::collections::VecDeque;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 // Cribbed from rivlib's examples.
 const DEFAULT_WANT: u32 = 1024;
@@ -12,6 +12,7 @@ const DEFAULT_SYNC_TO_PPS: bool = true;
 /// Follows the builder pattern to set the options for the stream.
 #[derive(Debug)]
 pub struct Stream {
+    log: Option<PathBuf>,
     sync_to_pps: bool,
     uri: Uri,
     want: u32,
@@ -32,32 +33,34 @@ enum Uri {
 }
 
 impl Stream {
-    /// Creates a new builder for the provided file path.
+    /// Creates a new stream for the provided file path.
     ///
     /// # Examples
     ///
     /// ```
     /// use scanifc::point3d::Stream;
-    /// let builder = Stream::from_path("data/scan.rxp");
+    /// let stream = Stream::from_path("data/scan.rxp");
     /// ```
     pub fn from_path<P: AsRef<Path>>(path: P) -> Stream {
         Stream {
+            log: None,
             sync_to_pps: DEFAULT_SYNC_TO_PPS,
             uri: Uri::from_path(path),
             want: DEFAULT_WANT,
         }
     }
 
-    /// Creates a new builder for the provided rdtp uri.
+    /// Creates a new stream for the provided rdtp uri.
     ///
     /// # Examples
     ///
     /// ```
     /// use scanifc::point3d::Stream;
-    /// let builder = Stream::from_rdtp("192.168.0.33/current?type=mon");
+    /// let stream = Stream::from_rdtp("192.168.0.33/current?type=mon");
     /// ```
     pub fn from_rdtp(rdtp: &str) -> Stream {
         Stream {
+            log: None,
             sync_to_pps: DEFAULT_SYNC_TO_PPS,
             uri: Uri::from_rdtp(rdtp),
             want: DEFAULT_WANT,
@@ -70,7 +73,7 @@ impl Stream {
     ///
     /// ```
     /// use scanifc::point3d::Stream;
-    /// let builder = Stream::from_path("data/scan.rxp").sync_to_pps(false);
+    /// let stream = Stream::from_path("data/scan.rxp").sync_to_pps(false);
     /// ```
     pub fn sync_to_pps(mut self, sync_to_pps: bool) -> Stream {
         self.sync_to_pps = sync_to_pps;
@@ -83,14 +86,34 @@ impl Stream {
     ///
     /// ```
     /// use scanifc::point3d::Stream;
-    /// let builder = Stream::from_path("data/scan.rxp").want(1);
+    /// let stream = Stream::from_path("data/scan.rxp").want(1);
     /// ```
     pub fn want(mut self, want: u32) -> Stream {
         self.want = want;
         self
     }
 
-    /// Creates a stream from this builder.
+    /// Sets the log filename for this stream.
+    ///
+    /// If `None`, the stream is opened without logging.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// extern crate tempfile;
+    /// # extern crate scanifc;
+    /// # fn main() {
+    /// use scanifc::point3d::Stream;
+    /// use tempfile::NamedTempFile;
+    /// let tempfile = NamedTempFile::new().unwrap();
+    /// let stream = Stream::from_path("data/scan.rxp").log(Some(tempfile.path()));
+    /// # }
+    pub fn log<P: AsRef<Path>>(mut self, log: Option<P>) -> Stream {
+        self.log = log.map(|path| path.as_ref().to_path_buf());
+        self
+    }
+
+    /// Opens the stream.
     ///
     /// # Examples
     ///
@@ -218,6 +241,7 @@ impl Uri {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn uri_from_path() {
@@ -235,13 +259,13 @@ mod tests {
     }
 
     #[test]
-    fn builder() {
+    fn stream() {
         let stream = Stream::from_path("data/scan.rxp").open().unwrap();
         assert_eq!(24390, stream.into_points().unwrap().len());
     }
 
     #[test]
-    fn builder_sync_to_pps() {
+    fn stream_sync_to_pps() {
         let stream = Stream::from_path("data/scan.rxp")
             .sync_to_pps(false)
             .open()
@@ -250,8 +274,18 @@ mod tests {
     }
 
     #[test]
-    fn builder_want() {
+    fn stream_want() {
         let mut stream = Stream::from_path("data/scan.rxp").want(1).open().unwrap();
         assert_eq!(1, stream.read().unwrap().unwrap().len());
+    }
+
+    #[test]
+    fn stream_log() {
+        let tempfile = NamedTempFile::new().unwrap();
+        let stream = Stream::from_path("data/scan.rxp")
+            .log(Some(tempfile.path()))
+            .open()
+            .unwrap();
+        assert_eq!(24390, stream.into_points().unwrap().len());
     }
 }
