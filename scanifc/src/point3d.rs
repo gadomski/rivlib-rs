@@ -14,6 +14,7 @@ const DEFAULT_SYNC_TO_PPS: bool = true;
 pub struct Builder {
     sync_to_pps: bool,
     uri: Uri,
+    want: u32,
 }
 
 /// A stream of points, from an rxp file.
@@ -43,6 +44,7 @@ impl Builder {
         Builder {
             sync_to_pps: DEFAULT_SYNC_TO_PPS,
             uri: Uri::from_path(path),
+            want: DEFAULT_WANT,
         }
     }
 
@@ -58,7 +60,34 @@ impl Builder {
         Builder {
             sync_to_pps: DEFAULT_SYNC_TO_PPS,
             uri: Uri::from_rdtp(rdtp),
+            want: DEFAULT_WANT,
         }
+    }
+
+    /// Sets the `sync_to_pps` field.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scanifc::point3d::Builder;
+    /// let builder = Builder::from_path("data/scan.rxp").sync_to_pps(false);
+    /// ```
+    pub fn sync_to_pps(mut self, sync_to_pps: bool) -> Builder {
+        self.sync_to_pps = sync_to_pps;
+        self
+    }
+
+    /// Sets the number of points requested on each read.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scanifc::point3d::Builder;
+    /// let builder = Builder::from_path("data/scan.rxp").want(1);
+    /// ```
+    pub fn want(mut self, want: u32) -> Builder {
+        self.want = want;
+        self
     }
 
     /// Creates a stream from this builder.
@@ -70,42 +99,25 @@ impl Builder {
     /// let stream = Builder::from_path("data/scan.rxp").to_stream().unwrap();
     /// ```
     pub fn to_stream(&self) -> Result<Stream> {
-        Stream::open(self.uri.as_str(), self.sync_to_pps)
-    }
-}
-
-impl Stream {
-    /// Opens a new stream for the provided uri, with no logger and default buffer size.
-    ///
-    /// The second parameter is `sync_to_pps`. If true, only grabs points that were collected after
-    /// the scanner was synced to an external PPS signal.
-    ///
-    /// To customize logging and buffer size behavior, use a `Builder`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use scanifc::point3d::Stream;
-    /// let stream = Stream::open("file:data/scan.rxp", true).unwrap();
-    /// ```
-    pub fn open(uri: &str, sync_to_pps: bool) -> Result<Stream> {
         use std::ffi::CString;
         use std::ptr;
 
         let mut handle: scanifc_sys::point3dstream_handle = ptr::null_mut();
-        let uri = CString::new(uri)?;
+        let uri = CString::new(self.uri.as_str())?;
         scanifc_try!(scanifc_sys::scanifc_point3dstream_open(
             uri.as_ptr(),
-            if sync_to_pps { 1 } else { 0 },
+            if self.sync_to_pps { 1 } else { 0 },
             &mut handle,
         ));
         Ok(Stream {
             buffer: VecDeque::new(),
             handle: handle,
-            want: DEFAULT_WANT,
+            want: self.want,
         })
     }
+}
 
+impl Stream {
     /// Consumes this stream and returns a vector of points.
     ///
     /// If this stream is mid-read, the returned points will be only the remaining points in the
@@ -114,8 +126,8 @@ impl Stream {
     /// # Examples
     ///
     /// ```
-    /// use scanifc::point3d::Stream;
-    /// let stream = Stream::open("file:data/scan.rxp", true).unwrap();
+    /// use scanifc::point3d::Builder;
+    /// let stream = Builder::from_path("data/scan.rxp").to_stream().unwrap();
     /// let points = stream.into_points().unwrap();
     /// ```
     pub fn into_points(self) -> Result<Vec<Point>> {
@@ -229,9 +241,20 @@ mod tests {
     }
 
     #[test]
-    fn stream_read() {
-        let stream = Stream::open("file:data/scan.rxp", true).unwrap();
-        let points = stream.collect::<Result<Vec<_>>>().unwrap();
-        assert_eq!(24390, points.len());
+    fn builder_sync_to_pps() {
+        let stream = Builder::from_path("data/scan.rxp")
+            .sync_to_pps(false)
+            .to_stream()
+            .unwrap();
+        assert_eq!(24390, stream.into_points().unwrap().len());
+    }
+
+    #[test]
+    fn builder_want() {
+        let mut stream = Builder::from_path("data/scan.rxp")
+            .want(1)
+            .to_stream()
+            .unwrap();
+        assert_eq!(1, stream.read().unwrap().unwrap().len());
     }
 }
