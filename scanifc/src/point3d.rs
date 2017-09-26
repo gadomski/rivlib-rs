@@ -1,9 +1,20 @@
-use {Result, Point};
-use std::collections::VecDeque;
+use {Point, Result};
 use scanifc_sys;
+use std::collections::VecDeque;
+use std::path::Path;
 
 // Cribbed from rivlib's examples.
 const DEFAULT_WANT: u32 = 1024;
+const DEFAULT_SYNC_TO_PPS: bool = true;
+
+/// A builder for streams.
+///
+/// Allows configuration of the stream behavior.
+#[derive(Debug)]
+pub struct Builder {
+    sync_to_pps: bool,
+    uri: Uri,
+}
 
 /// A stream of points, from an rxp file.
 #[derive(Debug)]
@@ -13,11 +24,55 @@ pub struct Stream {
     want: u32,
 }
 
-/// A builder for streams.
-///
-/// Allows configuration of the stream behavior.
-#[derive(Debug)]
-pub struct Builder {}
+#[derive(Debug, PartialEq)]
+enum Uri {
+    File(String),
+    Rdtp(String),
+}
+
+impl Builder {
+    /// Creates a new builder for the provided file path.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scanifc::point3d::Builder;
+    /// let builder = Builder::from_path("data/scan.rxp");
+    /// ```
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Builder {
+        Builder {
+            sync_to_pps: DEFAULT_SYNC_TO_PPS,
+            uri: Uri::from_path(path),
+        }
+    }
+
+    /// Creates a new builder for the provided rdtp uri.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scanifc::point3d::Builder;
+    /// let builder = Builder::from_rdtp("192.168.0.33/current?type=mon");
+    /// ```
+    pub fn from_rdtp(rdtp: &str) -> Builder {
+        Builder {
+            sync_to_pps: DEFAULT_SYNC_TO_PPS,
+            uri: Uri::from_rdtp(rdtp),
+        }
+    }
+
+    /// Creates a stream from this builder.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scanifc::point3d::Builder;
+    /// let stream = Builder::from_path("data/scan.rxp").to_stream().unwrap();
+    /// ```
+    pub fn to_stream(&self) -> Result<Stream> {
+        Stream::open(self.uri.as_str(), self.sync_to_pps)
+    }
+}
 
 impl Stream {
     /// Opens a new stream for the provided uri, with no logger and default buffer size.
@@ -49,6 +104,22 @@ impl Stream {
             handle: handle,
             want: DEFAULT_WANT,
         })
+    }
+
+    /// Consumes this stream and returns a vector of points.
+    ///
+    /// If this stream is mid-read, the returned points will be only the remaining points in the
+    /// stream.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scanifc::point3d::Stream;
+    /// let stream = Stream::open("file:data/scan.rxp", true).unwrap();
+    /// let points = stream.into_points().unwrap();
+    /// ```
+    pub fn into_points(self) -> Result<Vec<Point>> {
+        self.collect()
     }
 
     fn fill_buffer(&mut self) -> Result<Option<()>> {
@@ -116,9 +187,46 @@ impl Drop for Stream {
     }
 }
 
+impl Uri {
+    fn from_path<P: AsRef<Path>>(path: P) -> Uri {
+        Uri::File(format!("file:{}", path.as_ref().display()))
+    }
+
+    fn from_rdtp(rdtp: &str) -> Uri {
+        Uri::Rdtp(format!("rdtp://{}", rdtp))
+    }
+
+    fn as_str(&self) -> &str {
+        match *self {
+            Uri::File(ref s) | Uri::Rdtp(ref s) => s,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn uri_from_path() {
+        let uri = Uri::from_path("a/path/to/a/file.rxp");
+        assert_eq!(Uri::File("file:a/path/to/a/file.rxp".to_string()), uri);
+    }
+
+    #[test]
+    fn uri_from_rdtp() {
+        let uri = Uri::from_rdtp("192.168.0.33/current?type=mon");
+        assert_eq!(
+            Uri::Rdtp("rdtp://192.168.0.33/current?type=mon".to_string()),
+            uri
+        );
+    }
+
+    #[test]
+    fn builder() {
+        let stream = Builder::from_path("data/scan.rxp").to_stream().unwrap();
+        assert_eq!(24390, stream.into_points().unwrap().len());
+    }
 
     #[test]
     fn stream_read() {
