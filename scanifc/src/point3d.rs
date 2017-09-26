@@ -127,11 +127,22 @@ impl Stream {
 
         let mut handle: scanifc_sys::point3dstream_handle = ptr::null_mut();
         let uri = CString::new(self.uri.as_str())?;
-        scanifc_try!(scanifc_sys::scanifc_point3dstream_open(
-            uri.as_ptr(),
-            if self.sync_to_pps { 1 } else { 0 },
-            &mut handle,
-        ));
+        let sync_to_pps = if self.sync_to_pps { 1 } else { 0 };
+        if let Some(path) = self.log.as_ref() {
+            let log = CString::new(path.to_string_lossy().into_owned())?;
+            scanifc_try!(scanifc_sys::scanifc_point3dstream_open_with_logging(
+                uri.as_ptr(),
+                sync_to_pps,
+                log.as_ptr(),
+                &mut handle,
+            ));
+        } else {
+            scanifc_try!(scanifc_sys::scanifc_point3dstream_open(
+                uri.as_ptr(),
+                sync_to_pps,
+                &mut handle,
+            ));
+        }
         Ok(OpenStream {
             buffer: VecDeque::new(),
             handle: handle,
