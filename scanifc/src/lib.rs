@@ -1,4 +1,6 @@
 extern crate libc;
+#[macro_use]
+extern crate quick_error;
 extern crate scanifc_sys;
 #[cfg(test)]
 extern crate tempfile;
@@ -10,28 +12,47 @@ mod point;
 
 pub use point::Point;
 
-use std::ffi::{IntoStringError, NulError};
-
 // This number was cribbed from the rivlib example.
 const LAST_ERROR_BUFFER_SIZE: usize = 512;
 
-/// Our custom error enum.
-#[derive(Debug)]
-pub enum Error {
-    /// An error occurred while getting the last error.
-    ///
-    /// At this point, all we can do is return the error code from get_last_error.
-    GetLastError(libc::c_int),
-    /// Wrapper around `std::ffi::IntoStringError`.
-    FfiIntoString(IntoStringError),
-    /// Wrapper around `std::ffi::NulError`.
-    FfiNulError(NulError),
-    /// The last error message can't be turned into a string nicely.
-    LastErrorMessage(Vec<libc::c_char>),
-    /// A internal scanifc error.
-    ///
-    /// The message is provided by the scanifc library.
-    Scanifc(libc::c_int, String),
+quick_error! {
+    /// Our custom error enum.
+    #[derive(Debug)]
+    pub enum Error {
+        /// An error occurred while getting the last error.
+        ///
+        /// At this point, all we can do is return the error code from get_last_error.
+        GetLastError(n: libc::c_int) {
+            description("double error (error while retriving last error)")
+            display("error code {} while retriving last error", n)
+        }
+        /// Wrapper around `std::ffi::IntoStringError`.
+        FfiIntoString(err: std::ffi::IntoStringError) {
+            from()
+            description(err.description())
+            display("Ffi into string error: {}", err)
+            cause(err)
+        }
+        /// Wrapper around `std::ffi::NulError`.
+        FfiNulError(err: std::ffi::NulError) {
+            from()
+            description(err.description())
+            display("Ffi nul error: {}", err)
+            cause(err)
+        }
+        /// The last error message can't be turned into a string nicely.
+        LastErrorMessage(msg: Vec<libc::c_char>) {
+            description("a scanifc error that can't be turned into a string")
+            display("an error, here's its bytes: {:?}", msg)
+        }
+        /// A internal scanifc error.
+        ///
+        /// The message is provided by the scanifc library.
+        Scanifc(code: libc::c_int, message: String) {
+            description("a scanifc error")
+            display("error code {}, message: {}", code, message)
+        }
+    }
 }
 
 /// Our custom result type.
@@ -120,18 +141,6 @@ pub fn last_error() -> Result<String> {
         })
         .collect::<Result<Vec<u8>>>()?)?;
     c_string.into_string().map_err(Error::from)
-}
-
-impl From<IntoStringError> for Error {
-    fn from(err: IntoStringError) -> Error {
-        Error::FfiIntoString(err)
-    }
-}
-
-impl From<NulError> for Error {
-    fn from(err: NulError) -> Error {
-        Error::FfiNulError(err)
-    }
 }
 
 fn library_info() -> Result<(String, String)> {
