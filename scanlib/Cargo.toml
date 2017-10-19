@@ -1,0 +1,13 @@
+[package]
+name = "scanlib"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+quick-error = "*"
+
+[dev-dependencies]
+approx = "*"
+
+[build-dependencies]
+cc = "*"

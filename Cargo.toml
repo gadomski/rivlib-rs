@@ -1,2 +1,2 @@
 [workspace]
-members = ["scanifc", "scanifc-sys"]
+members = ["scanifc", "scanifc-sys", "scanlib"]
