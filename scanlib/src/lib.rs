@@ -51,7 +51,7 @@ fn last_error(n: i32, scanlib: *const wrapper::Scanlib) -> Error {
     Error::Scanlib(n, message)
 }
 
-pub fn inclincations_from_path<P: AsRef<std::path::Path>>(
+pub fn inclinations_from_path<P: AsRef<std::path::Path>>(
     path: P,
     sync_to_pps: bool,
 ) -> Result<Vec<Inclination>> {
@@ -85,18 +85,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn inclincations_from_path_fixture() {
-        let inclincations = inclincations_from_path("../scanifc/data/scan.rxp", false).unwrap();
-        assert_eq!(36, inclincations.len());
-        assert_relative_eq!(-8.442, inclincations[0].roll, epsilon = 1e-3);
-        assert_relative_eq!(-0.981, inclincations[0].pitch, epsilon = 1e-3);
-        assert_relative_eq!(67.7494, inclincations[35].time, epsilon = 1e-4);
-        assert_relative_eq!(-8.451, inclincations[35].roll, epsilon = 1e-3);
-        assert_relative_eq!(-1.004, inclincations[35].pitch, epsilon = 1e-3);
+    fn inclinations_from_path_fixture() {
+        let inclinations = inclinations_from_path("../scanifc/data/scan.rxp", false).unwrap();
+        assert_eq!(36, inclinations.len());
+        assert_relative_eq!(-8.442, inclinations[0].roll, epsilon = 1e-3);
+        assert_relative_eq!(-0.981, inclinations[0].pitch, epsilon = 1e-3);
+        assert_relative_eq!(67.7494, inclinations[35].time, epsilon = 1e-4);
+        assert_relative_eq!(-8.451, inclinations[35].roll, epsilon = 1e-3);
+        assert_relative_eq!(-1.004, inclinations[35].pitch, epsilon = 1e-3);
     }
 
     #[test]
-    fn inclincations_from_path_dne() {
-        assert!(inclincations_from_path("notafile", false).is_err());
+    fn inclinations_from_path_dne() {
+        assert!(inclinations_from_path("notafile", false).is_err());
     }
 }
