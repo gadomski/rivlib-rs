@@ -9,4 +9,4 @@ quick-error = "1.2"
 scanifc-sys = { path = "../scanifc-sys" }
 
 [dev-dependencies]
-tempfile = "2.1"
+tempfile = "2.2"
