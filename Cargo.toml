@@ -1,2 +1,12 @@
+[package]
+name = "rivlib"
+version = "0.1.0"
+authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+
+[dependencies]
+failure = "0.1"
+scanifc-sys = { path = "scanifc-sys" }
+scanlib = { path = "scanlib" }
+
 [workspace]
-members = ["scanifc", "scanifc-sys", "scanlib"]
+members = ["scanifc-sys", "scanlib"]

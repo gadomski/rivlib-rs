@@ -4,10 +4,8 @@ version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
 
 [dependencies]
-quick-error = "1.2"
-
-[dev-dependencies]
-approx = "0.1"
+failure = "0.1"
+libc = "0.2"
 
 [build-dependencies]
 cc = "1.0"

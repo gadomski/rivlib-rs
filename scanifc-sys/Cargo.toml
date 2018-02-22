@@ -2,6 +2,8 @@
 name = "scanifc-sys"
 version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+links = "scanifc"
+build = "build.rs"
 
 [build-dependencies]
 bindgen = "0.33"
