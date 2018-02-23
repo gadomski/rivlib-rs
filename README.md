@@ -5,33 +5,13 @@ Use [Riegl's](www.riegl.com/) [RiVLib](http://www.riegl.com/index.php?id=224) vi
 **Note: This software was not developed by Riegl.
 Please do not contact Riegl for support related to this software.**
 
-This crate is divided into three sub-crates:
+To use, you'll need to have RiVLib installed somewhere on your library search path, e.g. `/usr/local/lib`.
+You'll also need the headers installed to somewhere on your include file search path, e.g. `/usr/local/include`.
 
-- **scanifc-sys**: [`-sys`](https://doc.rust-lang.org/cargo/reference/build-scripts.html#-sys-packages) crate for the C `scanifc` library, part of RiVLib.
-- **scanifc**: wrapper crate around the sys crate to improve the interface.
-- **scanlib**: library that uses custom C++ wrapper files to interface with `scanlib`, RiVLib's C++ interface.
-  There are some functions that are only exposed in the C++ interface, not in the C interface.
+## Sub-crates
 
-This crate is very much a work in progress, there's a lot of functionality not exposed.
+Underneath the `rivlib` Rust lib, there are two sub-crates:
 
-## Examples
-
-A complete example of using `scanifc` to count the number of points in a files is in `scanifc/examples/count-points.rs`.
-
-To open a stream of points:
-
-```rust
-let stream = scanifc::point3d::Stream::from_path("path/to/file.rxp").open().unwrap();
-```
-
-You can specify if the stream should be opened with `sync_to_pps`, which controls whether points are included if they don't include pulse-per-second-sync information:
-
-```rust
-scanifc::point3d::Stream::from_path("file.rxp").sync_to_pps(false).open().unwrap();
-```
-
-To read inclination data from a file, use `inclinations_from_path`:
-
-```rust
-let inclinations = scanlib::inclinations_from_path("file.rxp", false).unwrap();
-```
+- *scanifc-sys* uses [bindgen](https://github.com/rust-lang-nursery/rust-bindgen) to build Rust bindings to RiVLib's C interface, `scanifc`.
+- *scanlib* uses a custom C++ wrapper to expose functionality from RiVLib's C++ interface, `scanlib`.
+  This C++ wrapper must be compiled on your machine when you're building the `rivlib` crate.
