@@ -6,7 +6,7 @@ description = "Bingen bindings to Riegl's scanifc library, part of RiVLib"
 links = "scanifc"
 build = "build.rs"
 keywords = ["riegl", "lidar"]
-license = "MIT/ASL2"
+license = "MIT"
 
 [build-dependencies]
 bindgen = "0.33"
