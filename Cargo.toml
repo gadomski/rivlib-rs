@@ -5,8 +5,8 @@ authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
 
 [dependencies]
 failure = "0.1"
-scanifc-sys = { path = "scanifc-sys" }
-scanlib = { path = "scanlib" }
+scanifc-sys = { path = "scanifc-sys", version = "0.1" }
+scanlib = { path = "scanlib", version = "0.1" }
 
 [workspace]
 members = ["scanifc-sys", "scanlib"]
