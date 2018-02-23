@@ -2,8 +2,11 @@
 name = "scanifc-sys"
 version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+description = "Bingen bindings to Riegl's scanifc library, part of RiVLib"
 links = "scanifc"
 build = "build.rs"
+keywords = ["riegl", "lidar"]
+license = "MIT/ASL2"
 
 [build-dependencies]
 bindgen = "0.33"
