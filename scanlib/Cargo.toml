@@ -2,6 +2,8 @@
 name = "scanlib"
 version = "0.1.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+description = "Custom C++ interface between Rust and Riegl's C++ scanlib"
+license = "MIT"
 
 [dependencies]
 failure = "0.1"
