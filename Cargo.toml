@@ -2,6 +2,8 @@
 name = "rivlib"
 version = "0.3.0"
 authors = ["Pete Gadomski <pete.gadomski@gmail.com>"]
+description = "Use Riegl's RiVLib to read rxp files"
+license = "MIT"
 
 [dependencies]
 failure = "0.1"
